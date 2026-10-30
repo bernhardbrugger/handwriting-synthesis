@@ -1,61 +1,87 @@
 ![](img/banner.svg)
 # Handwriting Synthesis
-Implementation of the handwriting synthesis experiments in the paper <a href="https://arxiv.org/abs/1308.0850">Generating Sequences with Recurrent Neural Networks</a> by Alex Graves.  The implementation closely follows the original paper, with a few slight deviations, and the generated samples are of similar quality to those presented in the paper.
 
-Web demo is available <a href="https://seanvasquez.com/handwriting-generation/">here</a>.
+Inference for the handwriting synthesis experiments in the paper [Generating Sequences with Recurrent Neural Networks](https://arxiv.org/abs/1308.0850) by Alex Graves. The network is the pretrained checkpoint `checkpoints/model-17900`. Sampling runs in NumPy and SciPy, without TensorFlow.
+
+ä, ö, ü and ß are rewritten to ae, oe, ue and ss before sampling. The model has no other letters outside its original alphabet (there is no capital Q, X or Z).
+
+## Install
+
+```bash
+pip install -r requirements.txt
+```
+
+That installs NumPy and SciPy only.
 
 ## Usage
+
+Write one SVG page:
+
+```bash
+python -m handwriting "Now this is a story all about how" -o seite.svg
+```
+
+Several lines, a calmer hand, and one of the stored styles (0–12):
+
+```bash
+python -m handwriting "Zeile eins" "Größe" -o seite.svg --bias 0.75 --style 9 --color navy
+```
+
+`Größe` is drawn as `Groesse`. `--seed 1` repeats the same page. `-o -` prints the SVG to stdout.
+
+A local page, bound to this machine:
+
+```bash
+python -m handwriting.server
+```
+
+Open http://127.0.0.1:8000/ . The form takes text, neatness, style, colour and stroke width.
+
 ```python
+from handwriting import Hand
+
 lines = [
     "Now this is a story all about how",
     "My life got flipped turned upside down",
     "And I'd like to take a minute, just sit right there",
     "I'll tell you how I became the prince of a town called Bel-Air",
 ]
-biases = [.75 for i in lines]
-styles = [9 for i in lines]
-stroke_colors = ['red', 'green', 'black', 'blue']
-stroke_widths = [1, 2, 1, 2]
-
 hand = Hand()
 hand.write(
     filename='img/usage_demo.svg',
     lines=lines,
-    biases=biases,
-    styles=styles,
-    stroke_colors=stroke_colors,
-    stroke_widths=stroke_widths
+    biases=[.75 for _ in lines],
+    styles=[9 for _ in lines],
+    stroke_colors=['red', 'green', 'black', 'blue'],
+    stroke_widths=[1, 2, 1, 2],
 )
 ```
+
 ![](img/usage_demo.svg)
 
-Currently, the `Hand` class must be imported from `demo.py`.  If someone would like to package this project to make it more usable, please [contribute](#contribute).
+Higher bias makes the samples neater. A style primes the network with a real line from `styles/` and then writes the new text in that hand.
 
-A pretrained model is included, but if you'd like to train your own, read <a href='https://github.com/sjvasquez/handwriting-synthesis/tree/master/data/raw'>these instructions</a>.
+Training is not included. The weights in `checkpoints/model-17900` are the ones used for the pictures below.
 
 ## Demonstrations
-Below are a few hundred samples from the model, including some samples demonstrating the effect of priming and biasing the model.  Loosely speaking, biasing controls the neatness of the samples and priming controls the style of the samples. The code for these demonstrations can be found in `demo.py`.
 
-### Demo #1:
-The following samples were generated with a fixed style and fixed bias.
+### Demo #1
 
-**Smash Mouth – All Star (<a href="https://www.azlyrics.com/lyrics/smashmouth/allstar.html">lyrics</a>)**
+Fixed style and fixed bias.
+
+**Smash Mouth – All Star ([lyrics](https://www.azlyrics.com/lyrics/smashmouth/allstar.html))**
 ![](img/all_star.svg)
 
 ### Demo #2
-The following samples were generated with varying style and fixed bias.  Each verse is generated in a different style.
 
-**Vanessa Carlton – A Thousand Miles (<a href="https://www.azlyrics.com/lyrics/vanessacarlton/athousandmiles.html">lyrics</a>)**
+Fixed bias, a different style for each verse.
+
+**Vanessa Carlton – A Thousand Miles ([lyrics](https://www.azlyrics.com/lyrics/vanessacarlton/athousandmiles.html))**
 ![](img/downtown.svg)
 
 ### Demo #3
-The following samples were generated with a fixed style and varying bias.  Each verse has a lower bias than the previous, with the last verse being unbiased.
 
-**Leonard Cohen – Hallelujah (<a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">lyrics</a>)**
+Fixed style, bias lowered on each verse. The last verse is unbiased.
+
+**Leonard Cohen – Hallelujah ([lyrics](https://www.youtube.com/watch?v=dQw4w9WgXcQ))**
 ![](img/give_up.svg)
-
-## Contribute
-This project was intended to serve as a reference implementation for a research paper, but since the results are of decent quality, it may be worthwile to make the project more broadly usable.  I plan to continue focusing on the machine learning side of things.  That said, I'd welcome contributors who can:
-
-  - Package this, and otherwise make it look more like a usable software project and less like research code.
-  - Add support for more sophisticated drawing, animations, or anything else in this direction.  Currently, the project only creates some simple svg files.
