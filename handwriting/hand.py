@@ -39,13 +39,13 @@ def find_checkpoint(explicit=None):
     if explicit is not None:
         prefix = Path(explicit)
         if not _checkpoint_prefix(prefix):
-            raise HandwritingError('Checkpoint nicht gefunden: {}'.format(prefix))
+            raise HandwritingError('Checkpoint not found: {}'.format(prefix))
         return prefix
     for candidate in (ROOT / 'checkpoints' / 'model-17900', Path.cwd() / 'checkpoints' / 'model-17900'):
         if _checkpoint_prefix(candidate):
             return candidate
     raise HandwritingError(
-        'checkpoints/model-17900 liegt weder neben dem Paket noch im aktuellen Ordner.'
+        'checkpoints/model-17900 was not found next to the package or in the current directory.'
     )
 
 
@@ -57,7 +57,7 @@ def find_styles(explicit=None):
         if not directory.is_dir():
             directory = Path.cwd() / 'styles'
     if not directory.is_dir():
-        raise HandwritingError('Stilordner nicht gefunden: {}'.format(directory))
+        raise HandwritingError('Styles directory not found: {}'.format(directory))
     return directory
 
 
@@ -82,9 +82,9 @@ def _as_lines(text):
             pieces = str(item).splitlines()
             lines.extend(pieces or [''])
     if not ''.join(lines).strip():
-        raise HandwritingError('Text fehlt.')
+        raise HandwritingError('Text is missing.')
     if sum(len(line) for line in lines) > _MAX_CHARS:
-        raise HandwritingError('Der Text ist zu lang (höchstens {} Zeichen).'.format(_MAX_CHARS))
+        raise HandwritingError('The text is too long (at most {} characters).'.format(_MAX_CHARS))
     return lines
 
 
@@ -96,14 +96,14 @@ def _broadcast(value, count, default, name):
     values = list(value)
     if len(values) != count:
         raise HandwritingError(
-            '{} braucht einen Wert oder genau {} Werte, nicht {}.'.format(name, count, len(values))
+            '{} needs one value or exactly {} values, got {}.'.format(name, count, len(values))
         )
     return values
 
 
 def _check_color(color):
     if not isinstance(color, str) or not _COLOR_RE.match(color):
-        raise HandwritingError('Ungültige Farbe: {!r}'.format(color))
+        raise HandwritingError('Invalid color: {!r}'.format(color))
     return color
 
 
@@ -111,9 +111,9 @@ def _check_width(width):
     try:
         number = float(width)
     except (TypeError, ValueError):
-        raise HandwritingError('Ungültige Strichstärke: {!r}'.format(width))
+        raise HandwritingError('Invalid stroke width: {!r}'.format(width))
     if not np.isfinite(number) or number <= 0 or number > 20:
-        raise HandwritingError('Strichstärke muss zwischen 0 und 20 liegen.')
+        raise HandwritingError('Stroke width must be between 0 and 20.')
     return number
 
 
@@ -121,9 +121,9 @@ def _check_bias(bias):
     try:
         number = float(bias)
     except (TypeError, ValueError):
-        raise HandwritingError('Ungültiger Bias: {!r}'.format(bias))
+        raise HandwritingError('Invalid bias: {!r}'.format(bias))
     if not np.isfinite(number) or number < -1 or number > 5:
-        raise HandwritingError('Bias muss zwischen -1 und 5 liegen.')
+        raise HandwritingError('Bias must be between -1 and 5.')
     return number
 
 
@@ -140,13 +140,13 @@ class Hand(object):
         try:
             style_id = int(style_id)
         except (TypeError, ValueError):
-            raise HandwritingError('Ungültiger Stil: {!r}'.format(style_id))
+            raise HandwritingError('Invalid style: {!r}'.format(style_id))
         if style_id not in self._style_cache:
             chars_path = self.styles_dir / 'style-{}-chars.npy'.format(style_id)
             strokes_path = self.styles_dir / 'style-{}-strokes.npy'.format(style_id)
             if not chars_path.is_file() or not strokes_path.is_file():
                 known = ', '.join(str(index) for index, _text in list_styles(self.styles_dir))
-                raise HandwritingError('Stil {} gibt es nicht. Vorhanden: {}.'.format(style_id, known))
+                raise HandwritingError('Style {} does not exist. Available: {}.'.format(style_id, known))
             text = np.load(chars_path).tobytes().decode('utf-8').replace('\x00', '')
             strokes = np.load(strokes_path).astype(np.float32)
             self._style_cache[style_id] = (text, strokes)
@@ -157,12 +157,12 @@ class Hand(object):
         source = _as_lines(lines)
         count = len(source)
         bias_values = [_check_bias(value) for value in _broadcast(biases, count, DEFAULT_BIAS, 'Bias')]
-        color_values = [_check_color(value) for value in _broadcast(stroke_colors, count, 'black', 'Farbe')]
-        width_values = [_check_width(value) for value in _broadcast(stroke_widths, count, 2, 'Strichstärke')]
+        color_values = [_check_color(value) for value in _broadcast(stroke_colors, count, 'black', 'color')]
+        width_values = [_check_width(value) for value in _broadcast(stroke_widths, count, 2, 'stroke width')]
         if styles is None:
             style_values = [None] * count
         else:
-            style_values = _broadcast(styles, count, None, 'Stil')
+            style_values = _broadcast(styles, count, None, 'style')
 
         prepared = []
         for line, bias, style, color, width in zip(
@@ -183,7 +183,7 @@ class Hand(object):
                 })
         if len(prepared) > _MAX_LINES:
             raise HandwritingError(
-                'Zu viele Zeilen nach dem Umbruch (höchstens {}).'.format(_MAX_LINES)
+                'Too many lines after wrapping (at most {}).'.format(_MAX_LINES)
             )
         return prepared
 

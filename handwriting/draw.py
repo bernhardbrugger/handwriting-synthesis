@@ -80,7 +80,7 @@ def _path(coords):
 def render_svg(offset_lines, colors, widths):
     """Place each sampled line on a white page and return an SVG document."""
     if not (len(offset_lines) == len(colors) == len(widths)):
-        raise ValueError('Striche, Farben und Stärken müssen gleich lang sein')
+        raise ValueError('strokes, colors and widths must be the same length')
 
     view_height = _LINE_HEIGHT * (len(offset_lines) + 1)
     placed = []

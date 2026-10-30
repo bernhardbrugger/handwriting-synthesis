@@ -94,16 +94,16 @@ class HandwritingModel(object):
         letters = self.alphabet
         components = self.n_components
         expected = {
-            'erstes LSTM': self.lstm1_kernel.shape == (letters + 3 + hidden, 4 * hidden),
-            'zweites LSTM': self.lstm2_kernel.shape == (3 + hidden + letters + hidden, 4 * hidden),
-            'drittes LSTM': self.lstm3_kernel.shape == self.lstm2_kernel.shape,
-            'Aufmerksamkeit': self.attn_w.shape == (letters + 3 + hidden, 3 * self.n_attn),
-            'Mischung': self.gmm_w.shape == (hidden, 6 * components + 1),
+            'first LSTM': self.lstm1_kernel.shape == (letters + 3 + hidden, 4 * hidden),
+            'second LSTM': self.lstm2_kernel.shape == (3 + hidden + letters + hidden, 4 * hidden),
+            'third LSTM': self.lstm3_kernel.shape == self.lstm2_kernel.shape,
+            'attention': self.attn_w.shape == (letters + 3 + hidden, 3 * self.n_attn),
+            'mixture': self.gmm_w.shape == (hidden, 6 * components + 1),
         }
         bad = [name for name, ok in expected.items() if not ok]
         if bad or letters != len(ALPHABET):
             raise CheckpointError(
-                'Checkpoint passt nicht zum Handschrift-Netz ({}).'.format(
+                'Checkpoint does not match the handwriting network ({}).'.format(
                     ', '.join(bad) or 'Alphabet'
                 )
             )

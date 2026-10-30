@@ -3,8 +3,6 @@
 
 Inference for the handwriting synthesis experiments in the paper [Generating Sequences with Recurrent Neural Networks](https://arxiv.org/abs/1308.0850) by Alex Graves. The network is the pretrained checkpoint `checkpoints/model-17900`. Sampling runs in NumPy and SciPy, without TensorFlow.
 
-ä, ö, ü and ß are rewritten to ae, oe, ue and ss before sampling. The model has no other letters outside its original alphabet (there is no capital Q, X or Z).
-
 ## Install
 
 ```bash
@@ -18,16 +16,16 @@ That installs NumPy and SciPy only.
 Write one SVG page:
 
 ```bash
-python -m handwriting "Now this is a story all about how" -o seite.svg
+python -m handwriting "Now this is a story all about how" -o page.svg
 ```
 
 Several lines, a calmer hand, and one of the stored styles (0–12):
 
 ```bash
-python -m handwriting "Zeile eins" "Größe" -o seite.svg --bias 0.75 --style 9 --color navy
+python -m handwriting "Line one" "Line two" -o page.svg --bias 0.75 --style 9 --color navy
 ```
 
-`Größe` is drawn as `Groesse`. `--seed 1` repeats the same page. `-o -` prints the SVG to stdout.
+`--seed 1` repeats the same page. `-o -` prints the SVG to stdout. The training alphabet has no capital Q, X or Z. ä, ö, ü and ß are spelled ae, oe, ue and ss, so those words still draw.
 
 A local page, bound to this machine:
 
@@ -35,7 +33,7 @@ A local page, bound to this machine:
 python -m handwriting.server
 ```
 
-Open http://127.0.0.1:8000/ . The form takes text, neatness, style, colour and stroke width.
+Open http://127.0.0.1:8000/ . The form takes text, bias, style, color and stroke width.
 
 ```python
 from handwriting import Hand

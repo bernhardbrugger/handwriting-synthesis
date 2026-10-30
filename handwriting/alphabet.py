@@ -1,4 +1,4 @@
-"""Character set of the pretrained model, plus German transliteration."""
+"""Character set of the pretrained model, plus a few ASCII rewrites."""
 
 import unicodedata
 
@@ -35,11 +35,11 @@ class TextError(ValueError):
 
 
 def transliterate(text):
-    """Rewrite German umlauts and a few typographic characters.
+    """Rewrite characters the model never saw into the training alphabet.
 
-    ä ö ü ß become ae, oe, ue, ss. Capital letters keep a capital first
-    letter (Ä becomes Ae). Curly quotes and long dashes become ASCII, because
-    the model only saw the characters in `ALPHABET`.
+    German umlauts become ae, oe, ue and ss, with a capital first letter
+    when the source letter is capital. Curly quotes and long dashes become
+    plain ASCII.
     """
     text = unicodedata.normalize('NFC', text)
     text = (
@@ -65,9 +65,9 @@ def validate_line(line):
         return
     shown = ', '.join('{} (U+{:04X})'.format(char, ord(char)) for char in invalid)
     raise TextError(
-        'Unbekanntes Zeichen: {}. Erlaubt sind Buchstaben ohne Q, X, Z in '
-        'Großschreibung, Ziffern und einfache Satzzeichen. Umlaute werden '
-        'vorher zu ae, oe, ue und ss.'.format(shown)
+        'Unknown character: {}. Capital Q, X and Z are not in the alphabet. '
+        'Digits and simple punctuation are allowed. Umlauts are rewritten '
+        'to ae, oe, ue and ss beforehand.'.format(shown)
     )
 
 

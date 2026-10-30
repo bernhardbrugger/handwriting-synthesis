@@ -1,4 +1,4 @@
-"""Command line: python -m handwriting \"Text\" -o seite.svg"""
+"""Command line: python -m handwriting \"Text\" -o page.svg"""
 
 import argparse
 import sys
@@ -9,20 +9,34 @@ from .hand import DEFAULT_BIAS, Hand, HandwritingError
 def build_parser():
     parser = argparse.ArgumentParser(
         prog='python -m handwriting',
-        description='Schreibt Text mit dem Handschrift-Modell nach SVG. Umlaute werden zu ae, oe, ue und ss.',
+        description='Draw text with the handwriting model and save an SVG page.',
     )
-    parser.add_argument('text', nargs='+', help='Text. Mehrere Argumente oder Zeilenumbrüche werden zu Zeilen.')
-    parser.add_argument('-o', '--output', required=True, help='SVG-Datei, oder - für die Standardausgabe')
+    parser.add_argument(
+        'text',
+        nargs='+',
+        help='Text. Extra arguments, or newlines, become separate lines.',
+    )
+    parser.add_argument('-o', '--output', required=True, help='SVG file, or - for standard output')
     parser.add_argument(
         '--bias',
         type=float,
         default=DEFAULT_BIAS,
-        help='Sauberkeit, höher ist ruhiger (Standard %(default)s)',
+        help='Bias. Higher is neater (default %(default)s)',
     )
-    parser.add_argument('--style', type=int, default=None, help='Stilnummer aus styles/, sonst ohne Vorbild')
-    parser.add_argument('--color', default='black', help='Strichfarbe (Standard black)')
-    parser.add_argument('--width', type=float, default=2, help='Strichstärke (Standard %(default)s)')
-    parser.add_argument('--seed', type=int, default=None, help='Zufallsstart, damit dieselbe Seite wieder entsteht')
+    parser.add_argument(
+        '--style',
+        type=int,
+        default=None,
+        help='Style number from styles/. Omit for no priming.',
+    )
+    parser.add_argument('--color', default='black', help='Stroke color (default black)')
+    parser.add_argument('--width', type=float, default=2, help='Stroke width (default %(default)s)')
+    parser.add_argument(
+        '--seed',
+        type=int,
+        default=None,
+        help='Random seed, so the same page can be drawn again',
+    )
     return parser
 
 

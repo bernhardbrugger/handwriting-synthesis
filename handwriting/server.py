@@ -8,11 +8,11 @@ from .hand import DEFAULT_BIAS, Hand, HandwritingError, list_styles
 
 
 _PAGE = """<!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Handschrift</title>
+<title>Handwriting</title>
 <style>
   :root {{ color-scheme: light; }}
   body {{
@@ -101,36 +101,36 @@ _PAGE = """<!DOCTYPE html>
 </head>
 <body>
 <main>
-  <h1>Handschrift</h1>
-  <p class="lead">Das Modell schreibt den Text als Tinte. ä, ö, ü und ß werden zu ae, oe, ue und ss.
-  Q, X und Z gibt es nur klein.</p>
+  <h1>Handwriting</h1>
+  <p class="lead">The model draws the text in ink. Higher bias is neater.
+  Capital Q, X and Z are not in the alphabet.</p>
   {error}
   <form method="post" action="/">
     <label for="text">Text</label>
     <textarea id="text" name="text" required>{text}</textarea>
     <div class="grid">
       <div>
-        <label for="bias">Sauberkeit <output id="bias-out">{bias}</output></label>
+        <label for="bias">Bias <output id="bias-out">{bias}</output></label>
         <input id="bias" name="bias" type="range" min="0" max="2" step="0.05" value="{bias}">
       </div>
       <div>
-        <label for="style">Stil</label>
+        <label for="style">Style</label>
         <select id="style" name="style">{styles}</select>
       </div>
       <div>
-        <label for="color">Farbe</label>
+        <label for="color">Color</label>
         <input id="color" name="color" type="color" value="{color}">
       </div>
       <div>
-        <label for="width">Strichstärke</label>
+        <label for="width">Stroke width</label>
         <input id="width" name="width" type="number" min="0.5" max="8" step="0.5" value="{width}">
       </div>
       <div>
-        <label for="seed">Zufallsstart, leer für jedes Mal neu</label>
+        <label for="seed">Seed, empty for a new page each time</label>
         <input id="seed" name="seed" type="text" inputmode="numeric" value="{seed}">
       </div>
     </div>
-    <button type="submit">Schreiben</button>
+    <button type="submit">Write</button>
   </form>
   {result}
 </main>
@@ -145,7 +145,7 @@ _PAGE = """<!DOCTYPE html>
 
 
 def _style_options(selected):
-    options = ['<option value="">ohne Vorbild</option>']
+    options = ['<option value="">no style</option>']
     for index, phrase in list_styles():
         mark = ' selected' if selected == str(index) else ''
         label = html.escape('{} — {}'.format(index, phrase))
@@ -191,17 +191,17 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.split('?', 1)[0] not in ('/', '/index.html'):
-            self._send(404, _page('', DEFAULT_BIAS, '', '#1a1a1a', 2, '', error='Diese Seite gibt es nicht.'))
+            self._send(404, _page('', DEFAULT_BIAS, '', '#1a1a1a', 2, '', error='This page does not exist.'))
             return
         self._send(200, _page('', DEFAULT_BIAS, '', '#1a1a1a', 2, ''))
 
     def do_POST(self):
         if self.path.split('?', 1)[0] != '/':
-            self._send(404, _page('', DEFAULT_BIAS, '', '#1a1a1a', 2, '', error='Diese Seite gibt es nicht.'))
+            self._send(404, _page('', DEFAULT_BIAS, '', '#1a1a1a', 2, '', error='This page does not exist.'))
             return
         length = int(self.headers.get('Content-Length', '0') or 0)
         if length > 100000:
-            self._send(400, _page('', DEFAULT_BIAS, '', '#1a1a1a', 2, '', error='Die Anfrage ist zu groß.'))
+            self._send(400, _page('', DEFAULT_BIAS, '', '#1a1a1a', 2, '', error='The request is too large.'))
             return
         raw = self.rfile.read(length).decode('utf-8', errors='replace')
         form = parse_qs(raw, keep_blank_values=True)
@@ -231,7 +231,7 @@ class _Handler(BaseHTTPRequestHandler):
         result = (
             '<section class="sheet">'
             + embedded
-            + '<p class="meta">Geschrieben als: '
+            + '<p class="meta">Written as: '
             + html.escape(written)
             + '</p></section>'
         )
@@ -243,21 +243,21 @@ def main(argv=None):
 
     parser = argparse.ArgumentParser(
         prog='python -m handwriting.server',
-        description='Lokale Seite, die Text als Handschrift zeigt.',
+        description='Local page that draws text as handwriting.',
     )
-    parser.add_argument('--host', default='127.0.0.1', help='Adresse (Standard 127.0.0.1)')
-    parser.add_argument('--port', type=int, default=8000, help='Port (Standard 8000)')
+    parser.add_argument('--host', default='127.0.0.1', help='Address (default 127.0.0.1)')
+    parser.add_argument('--port', type=int, default=8000, help='Port (default 8000)')
     args = parser.parse_args(argv)
 
-    print('Lade Gewichte aus dem Checkpoint …')
+    print('Loading checkpoint weights...')
     _Handler.hand = Hand()
     server = ThreadingHTTPServer((args.host, args.port), _Handler)
     url = 'http://{}:{}/'.format(args.host, args.port)
-    print('Seite bereit: {}'.format(url))
+    print('Ready at {}'.format(url))
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print('\nServer beendet.')
+        print('\nServer stopped.')
     finally:
         server.server_close()
     return 0

@@ -24,7 +24,7 @@ def _read_varint(buf, index):
     result = 0
     while True:
         if index >= len(buf):
-            raise CheckpointError('abgeschnittene Varint-Zahl im Checkpoint')
+            raise CheckpointError('truncated varint in the checkpoint')
         byte = buf[index]
         index += 1
         result |= (byte & 0x7F) << shift
@@ -32,7 +32,7 @@ def _read_varint(buf, index):
             return result, index
         shift += 7
         if shift > 70:
-            raise CheckpointError('Varint im Checkpoint ist zu lang')
+            raise CheckpointError('varint in the checkpoint is too long')
 
 
 def _parse_fields(buf):
@@ -54,17 +54,17 @@ def _parse_fields(buf):
             value = buf[index:index + 4]
             index += 4
         else:
-            raise CheckpointError('unbekannter Protobuf-Typ im Checkpoint')
+            raise CheckpointError('unknown protobuf type in the checkpoint')
         fields.append((field_number, wire_type, value))
     return fields
 
 
 def _parse_block(data):
     if len(data) < 4:
-        raise CheckpointError('Checkpoint-Block ist zu kurz')
+        raise CheckpointError('checkpoint block is too short')
     num_restarts = struct.unpack_from('<I', data, len(data) - 4)[0]
     if num_restarts < 1 or (1 + num_restarts) * 4 > len(data):
-        raise CheckpointError('Checkpoint-Block hat ungültige Restart-Punkte')
+        raise CheckpointError('checkpoint block has invalid restart points')
     end = len(data) - (1 + num_restarts) * 4
     entries = []
     index = 0
@@ -74,7 +74,7 @@ def _parse_block(data):
         unshared, index = _read_varint(data, index)
         value_length, index = _read_varint(data, index)
         if shared > len(key):
-            raise CheckpointError('defekter Schlüssel im Checkpoint-Index')
+            raise CheckpointError('broken key in the checkpoint index')
         key = key[:shared] + data[index:index + unshared]
         index += unshared
         value = data[index:index + value_length]
@@ -93,9 +93,9 @@ def _load_block(raw, offset, size):
     block = raw[offset:offset + size]
     trailer = raw[offset + size:offset + size + _BLOCK_TRAILER]
     if len(block) != size or len(trailer) != _BLOCK_TRAILER:
-        raise CheckpointError('Checkpoint-Index ist abgeschnitten')
+        raise CheckpointError('checkpoint index is truncated')
     if trailer[0] != 0:
-        raise CheckpointError('komprimierte Checkpoint-Blöcke werden nicht gelesen')
+        raise CheckpointError('compressed checkpoint blocks are not supported')
     return block
 
 
@@ -123,10 +123,10 @@ def _tensor_entry(blob):
 def _index_entries(index_path):
     raw = Path(index_path).read_bytes()
     if len(raw) < _TABLE_FOOTER_LENGTH:
-        raise CheckpointError('Checkpoint-Index ist zu klein')
+        raise CheckpointError('checkpoint index is too small')
     magic = struct.unpack_from('<Q', raw, len(raw) - 8)[0]
     if magic != _TABLE_MAGIC:
-        raise CheckpointError('Checkpoint-Index hat keine TensorFlow-Signatur')
+        raise CheckpointError('checkpoint index has no TensorFlow signature')
     footer = raw[-_TABLE_FOOTER_LENGTH:]
     _, _, cursor = _block_handle(footer, 0)
     index_offset, index_size, _ = _block_handle(footer, cursor)
@@ -149,7 +149,7 @@ def load_weights(prefix, names):
     data_path = prefix.parent / (prefix.name + '.data-00000-of-00001')
     if not index_path.is_file() or not data_path.is_file():
         raise CheckpointError(
-            'Checkpoint nicht gefunden: {} (.index und .data-00000-of-00001)'.format(prefix)
+            'checkpoint not found: {} (.index and .data-00000-of-00001)'.format(prefix)
         )
 
     wanted = set(names)
@@ -160,14 +160,14 @@ def load_weights(prefix, names):
             continue
         dtype, shape, offset, size = _tensor_entry(blob)
         if dtype != 1:
-            raise CheckpointError('{} ist kein float32-Tensor'.format(name))
+            raise CheckpointError('{} is not a float32 tensor'.format(name))
         if size is None:
-            raise CheckpointError('{} hat keine Größe im Index'.format(name))
+            raise CheckpointError('{} has no size in the index'.format(name))
         located[name] = (shape, offset, size)
 
     missing = sorted(wanted - set(located))
     if missing:
-        raise CheckpointError('Gewichte fehlen im Checkpoint: {}'.format(', '.join(missing)))
+        raise CheckpointError('weights missing from the checkpoint: {}'.format(', '.join(missing)))
 
     return _read_tensors(data_path, located)
 
@@ -179,12 +179,12 @@ def _read_tensors(data_path, located):
             handle.seek(offset)
             raw = handle.read(size)
             if len(raw) != size:
-                raise CheckpointError('Gewichtsdaten für {} sind abgeschnitten'.format(name))
+                raise CheckpointError('weight data for {} is truncated'.format(name))
             count = 1
             for dim in shape:
                 count *= dim
             if count * 4 != size:
-                raise CheckpointError('Größe von {} passt nicht zur Form {}'.format(name, shape))
+                raise CheckpointError('size of {} does not match shape {}'.format(name, shape))
             array = np.frombuffer(raw, dtype='<f4')
             weights[name] = array.reshape(shape).copy() if shape else array.copy()
     return weights
