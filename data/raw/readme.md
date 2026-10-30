@@ -1,3 +1,5 @@
+Training is not part of this checkout. Sampling uses `checkpoints/model-17900` through `python -m handwriting`.
+
 ## Model Training Instructions
 
 In order to train a model, data must be downloaded and placed in this directory.
